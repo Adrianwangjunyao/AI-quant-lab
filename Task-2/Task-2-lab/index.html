@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技术指标交互计算器</title>
+<script src="chart.umd.min.js"></script>
+<script src="data.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;justify-content:center;padding:20px;min-height:100vh;color:#1f2937}
+.app{width:920px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;display:flex;flex-direction:column}
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #e5e7eb;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:30px;height:30px;border-radius:8px;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#185fa5}
+.logo-text{font-weight:500;font-size:14px}
+.logo-sub{font-size:11px;color:#6b7280}
+.hdr-ctrl{display:flex;gap:8px;align-items:center}
+.hdr-ctrl select{height:32px;font-size:13px;padding:0 28px 0 10px;border-radius:6px;border:1px solid #d1d5db;background:#fff;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer}
+.btn{height:32px;padding:0 14px;font-size:13px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btn-primary{background:#e6f1fb;border-color:#b5d4f4;color:#185fa5;font-weight:500}
+.btn-primary:hover{background:#d1e4f7}
+/* Body flex */
+.body{display:flex;flex:1;min-height:0}
+/* Sidebar */
+.sidebar{width:195px;border-right:1px solid #e5e7eb;padding:10px;flex-shrink:0;overflow-y:auto}
+.sb-title{font-size:11px;font-weight:500;color:#6b7280;margin-bottom:6px;padding-left:4px;text-transform:uppercase;letter-spacing:.5px}
+.panel{background:#f9fafb;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:all .12s;border:1.5px solid transparent}
+.panel:hover{background:#f0f1f3}
+.panel.active{border-color:#378add;background:#f0f7ff}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.pn{font-size:13px;font-weight:500}
+.tg{font-size:11px;color:#9ca3af;cursor:pointer;user-select:none;padding:2px 6px;border-radius:4px;transition:background .15s}
+.tg:hover{background:#e5e7eb}
+.tg.on{color:#185fa5;background:#dbeafe}
+.pr{display:none}
+.panel.active .pr{display:block}
+.sr{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.sr label{font-size:11px;color:#6b7280;white-space:nowrap;min-width:42px}
+.sr input[type=range]{flex:1;height:4px;accent-color:#378add;cursor:pointer}
+.sr .sv{font-size:11px;font-weight:500;width:22px;text-align:right;color:#374151}
+.ng{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center}
+.ng label{font-size:11px;color:#6b7280}
+.ng input{width:46px;height:22px;font-size:11px;padding:0 4px;border:1px solid #d1d5db;border-radius:4px;text-align:center}
+.btn-apply{width:100%;margin-top:10px;height:34px;font-size:13px;border-radius:8px;border:1px solid #b5d4f4;background:#e6f1fb;color:#185fa5;font-weight:500;cursor:pointer}
+.btn-apply:hover{background:#d1e4f7}
+/* Main */
+.main{flex:1;padding:10px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #e5e7eb;flex-shrink:0}
+.tab{padding:7px 14px;font-size:13px;cursor:pointer;border-radius:6px 6px 0 0;color:#6b7280;transition:all .12s;position:relative;top:1px;display:flex;align-items:center;gap:5px}
+.tab:hover{background:#f9fafb;color:#374151}
+.tab.active{font-weight:500;background:#fff;border:1px solid #e5e7eb;border-bottom-color:#fff;color:#1f2937}
+.td{display:inline-block;width:7px;height:7px;border-radius:50%}
+/* Chart */
+.chart-wrap{background:#fafafa;border-radius:10px;flex:1;padding:10px 12px;border:1px solid #f0f0f0;display:flex;flex-direction:column;min-height:0;position:relative}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-shrink:0}
+.ct{font-size:13px;font-weight:500}
+.ct small{font-size:11px;color:#9ca3af;font-weight:400;margin-left:6px}
+.cc{flex:1;min-height:0;position:relative}
+.cc canvas{width:100%!important;height:100%!important}
+.cl{font-size:10px;color:#9ca3af;margin-top:4px;flex-shrink:0}
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;flex-shrink:0}
+.sc{background:#f9fafb;border-radius:6px;padding:6px 10px}
+.sl{font-size:10px;color:#6b7280}
+.sv{font-size:14px;font-weight:500}
+/* Footer */
+.footer{border-top:1px solid #e5e7eb;padding:8px 20px;font-size:12px;color:#6b7280;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.fs{display:flex;gap:12px}
+.fa{display:flex;gap:8px;color:#9ca3af;cursor:pointer}
+.fa span:hover{color:#6b7280}
+/* File input hidden */
+#csvInput{display:none}
+/* Loading */
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);font-size:13px;color:#6b7280;z-index:10;border-radius:10px}
+.loading.hidden{display:none}
+
+.c-red{color:#dc2626}.c-green{color:#10b981}.c-blue{color:#2563eb}.c-amber{color:#d97706}.c-purple{color:#7c3aed}.c-teal{color:#0d9488}.c-sky{color:#0284c7}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">TI</div>
+      <div>
+        <div class="logo-text">技术指标交互计算器</div>
+        <div class="logo-sub">五个指标 · 参数即时调节</div>
+      </div>
+    </div>
+    <div class="hdr-ctrl">
+      <select id="stockSelect">
+        <option value="603986">兆易创新 (603986)</option>
+        <option value="600519">贵州茅台 (600519)</option>
+        <option value="300750">宁德时代 (300750)</option>
+        <option value="000858">五粮液 (000858)</option>
+        <option value="__custom__">— 输入代码 —</option>
+        <option value="__upload__">— 上传 CSV —</option>
+      </select>
+      <input type="text" id="stockCodeInput" placeholder="6位代码" maxlength="6" style="width:88px;height:32px;font-size:13px;padding:0 8px;border-radius:6px;border:1px solid #d1d5db;display:none">
+      <button class="btn btn-primary" id="loadBtn">加载</button>
+      <button class="btn" id="csvBtn" title="上传 CSV">📁</button>
+      <input type="file" id="csvInput" accept=".csv">
+      <button class="btn" id="scaleToggle">对数坐标</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sb-title">指标参数</div>
+      <!-- RSI -->
+      <div class="panel active" data-ind="rsi">
+        <div class="ph"><span class="pn">RSI</span><span class="tg on" data-vis="rsi">显示</span></div>
+        <div class="pr">
+          <div class="sr"><label>周期</label><input type="range" min="3" max="30" value="14" data-p="rsiN"><span class="sv">14</span></div>
+          <div class="sr"><label>超买</label><input type="range" min="60" max="90" value="70" data-p="rsiOb"><span class="sv">70</span></div>
+          <div class="sr"><label>超卖</label><input type="range" min="10" max="40" value="30" data-p="rsiOs"><span class="sv">30</span></div>
+        </div>
+      </div>
+      <!-- MACD -->
+      <div class="panel" data-ind="macd">
+        <div class="ph"><span class="pn">MACD</span><span class="tg on" data-vis="macd">显示</span></div>
+        <div class="pr">
+          <div class="ng"><label>快线</label><input type="number" value="12" data-p="macdFast" min="5" max="30"><label>慢线</label><input type="number" value="26" data-p="macdSlow" min="10" max="60"><label>信号</label><input type="number" value="9" data-p="macdSig" min="3" max="20"></div>
+        </div>
+      </div>
+      <!-- BB -->
+      <div class="panel" data-ind="bb">
+        <div class="ph"><span class="pn">布林带</span><span class="tg on" data-vis="bb">显示</span></div>
+        <div class="pr">
+          <div class="sr"><label>周期</label><input type="range" min="5" max="50" value="20" data-p="bbN"><span class="sv">20</span></div>
+          <div class="sr"><label>标准差</label><input type="range" min="1" max="4" value="2" step="0.5" data-p="bbK"><span class="sv">2</span></div>
+        </div>
+      </div>
+      <!-- ATR -->
+      <div class="panel" data-ind="atr">
+        <div class="ph"><span class="pn">ATR</span><span class="tg on" data-vis="atr">显示</span></div>
+        <div class="pr">
+          <div class="sr"><label>周期</label><input type="range" min="5" max="30" value="14" data-p="atrN"><span class="sv">14</span></div>
+        </div>
+      </div>
+      <!-- KDJ -->
+      <div class="panel" data-ind="kdj">
+        <div class="ph"><span class="pn">KDJ</span><span class="tg on" data-vis="kdj">显示</span></div>
+        <div class="pr">
+          <div class="ng"><label>RSV</label><input type="number" value="9" data-p="kdjRsv" min="3" max="30"><label>K</label><input type="number" value="3" data-p="kdjK" min="2" max="10"><label>D</label><input type="number" value="3" data-p="kdjD" min="2" max="10"></div>
+        </div>
+      </div>
+      <button class="btn-apply" id="recalcBtn">重新计算</button>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-tab="rsi"><span class="td" style="background:#378add"></span>RSI</div>
+        <div class="tab" data-tab="macd"><span class="td" style="background:#f59e0b"></span>MACD</div>
+        <div class="tab" data-tab="bb"><span class="td" style="background:#14b8a6"></span>布林带</div>
+        <div class="tab" data-tab="atr"><span class="td" style="background:#0ea5e9"></span>ATR</div>
+        <div class="tab" data-tab="kdj"><span class="td" style="background:#8b5cf6"></span>KDJ</div>
+      </div>
+
+      <div class="chart-wrap" id="chartWrap">
+        <div class="loading hidden" id="loading">计算中...</div>
+        <div class="ch">
+          <span class="ct"><span id="chartTitle">RSI — 相对强弱指标</span><small id="chartSub">周期=14 超买=70 超卖=30</small></span>
+        </div>
+        <div class="cc"><canvas id="chart"></canvas></div>
+        <div class="cl" id="chartLegend">价格走势（收盘价）· RSI 曲线</div>
+      </div>
+
+      <div class="stats" id="statsBar">
+        <div class="sc"><div class="sl">收盘价</div><div class="sv" id="sClose">—</div></div>
+        <div class="sc"><div class="sl">RSI</div><div class="sv" id="sRsi">—</div></div>
+        <div class="sc"><div class="sl">MACD</div><div class="sv" id="sMacd">—</div></div>
+        <div class="sc"><div class="sl">布林%B</div><div class="sv" id="sBb">—</div></div>
+        <div class="sc"><div class="sl">ATR</div><div class="sv" id="sAtr">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="fs"><span><span class="c-green">买入</span>: <span id="buySignals">—</span></span><span><span class="c-red">卖出</span>: <span id="sellSignals">—</span></span></div>
+    <div class="fa"><span id="resetBtn">重置参数</span></div>
+  </div>
+</div>
+
+<script>
+// ==========================================================
+// 1. 数据管理
+// ==========================================================
+let stockData = null; // { dates, open, high, low, close, vol }
+let stockName = '兆易创新';
+let chartInstance = null;
+let currentTab = 'rsi';
+let logScale = true;
+
+function loadPreset(name) {
+  if (STOCK_PRESETS[name]) {
+    stockData = STOCK_PRESETS[name];
+    stockName = name;
+    return true;
+  }
+  return false;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const header = lines[0].toLowerCase();
+  const col = {};
+  const cols = header.split(',');
+  for (let i = 0; i < cols.length; i++) {
+    const c = cols[i].trim();
+    if (c.includes('trade_date')||c.includes('date')) col.d = i;
+    if (c==='open'||c.includes('开盘')) col.o = i;
+    if (c==='high'||c.includes('最高')) col.h = i;
+    if (c==='low'||c.includes('最低')) col.l = i;
+    if (c==='close'||c.includes('收盘')) col.c = i;
+    if (c==='vol'||c.includes('成交量')||c==='volume') col.v = i;
+  }
+  if (col.d==null||col.o==null||col.h==null||col.l==null||col.c==null) {
+    alert('CSV 缺少必要列。需要: trade_date, open, high, low, close');
+    return null;
+  }
+  const data = { dates:[], open:[], high:[], low:[], close:[], vol:[] };
+  for (let r = 1; r < lines.length; r++) {
+    const p = lines[r].split(',');
+    if (p.length < 5) continue;
+    data.dates.push(p[col.d].trim());
+    data.open.push(parseFloat(p[col.o]));
+    data.high.push(parseFloat(p[col.h]));
+    data.low.push(parseFloat(p[col.l]));
+    data.close.push(parseFloat(p[col.c]));
+    data.vol.push(col.v!=null ? parseFloat(p[col.v])||0 : 0);
+  }
+  // Sort ascending
+  data.dates = data.dates.reverse();
+  data.open.reverse(); data.high.reverse(); data.low.reverse();
+  data.close.reverse(); data.vol.reverse();
+  return data;
+}
+
+// ==========================================================
+// 2. 指标计算
+// ==========================================================
+function calcRSI(d, n, ob, os) {
+  const rsi = new Array(d.length).fill(null);
+  if (d.length < n+1) return rsi;
+  const gains = [], losses = [];
+  for (let i = 1; i < d.length; i++) {
+    const chg = d[i] - d[i-1];
+    gains.push(chg>0?chg:0);
+    losses.push(chg<0?-chg:0);
+  }
+  let avgG = gains.slice(0,n).reduce((a,b)=>a+b,0)/n;
+  let avgL = losses.slice(0,n).reduce((a,b)=>a+b,0)/n;
+  for (let i = n; i < d.length; i++) {
+    const rs = avgL===0?100:avgG/avgL;
+    rsi[i] = 100 - 100/(1+rs);
+    if (i < d.length-1) {
+      avgG = (avgG*(n-1) + gains[i])/n;
+      avgL = (avgL*(n-1) + losses[i])/n;
+    }
+  }
+  return { rsi, signals: rsi.map(v=>v==null?null:v>ob?'sell':v<os?'buy':'none') };
+}
+
+function calcMACD(d, fast, slow, sig) {
+  const ema = (arr, span) => {
+    const r = new Array(arr.length).fill(null);
+    const k = 2/(span+1);
+    r[0] = arr[0];
+    for (let i = 1; i < arr.length; i++) r[i] = k*arr[i] + (1-k)*r[i-1];
+    return r;
+  };
+  const eFast = ema(d, fast);
+  const eSlow = ema(d, slow);
+  const dif = eFast.map((v,i)=>v==null||eSlow[i]==null?null:v-eSlow[i]);
+  const dea = ema(dif.filter(v=>v!==null), sig);
+  // Pad dea with nulls
+  const deaPadded = new Array(d.length).fill(null);
+  let idx = 0;
+  for (let i = 0; i < d.length; i++) {
+    if (dif[i]!==null) { deaPadded[i] = dea[idx]; idx++; }
+  }
+  const hist = dif.map((v,i)=>v==null||deaPadded[i]==null?null:(v-deaPadded[i])*2);
+  // Golden cross detection
+  const signals = new Array(d.length).fill(null);
+  for (let i = 1; i < d.length; i++) {
+    if (dif[i]!==null && deaPadded[i]!==null && dif[i-1]!==null && deaPadded[i-1]!==null) {
+      if (dif[i-1] < deaPadded[i-1] && dif[i] > deaPadded[i]) signals[i] = 'buy';
+      else if (dif[i-1] > deaPadded[i-1] && dif[i] < deaPadded[i]) signals[i] = 'sell';
+    }
+  }
+  return { dif, dea: deaPadded, hist, signals };
+}
+
+function calcBB(d, n, k) {
+  const mid = new Array(d.length).fill(null);
+  const upper = new Array(d.length).fill(null);
+  const lower = new Array(d.length).fill(null);
+  const pctB = new Array(d.length).fill(null);
+  for (let i = n-1; i < d.length; i++) {
+    const slice = d.slice(i-n+1, i+1);
+    const mean = slice.reduce((a,b)=>a+b,0)/n;
+    const std = Math.sqrt(slice.reduce((a,b)=>a+(b-mean)**2,0)/n);
+    mid[i] = mean;
+    upper[i] = mean + k*std;
+    lower[i] = mean - k*std;
+    pctB[i] = (d[i]-lower[i])/(upper[i]-lower[i]);
+  }
+  const signals = pctB.map((v,i)=>v==null?null:v>1?'sell':v<0?'buy':'none');
+  return { mid, upper, lower, pctB, signals };
+}
+
+function calcATR(h, l, c, n) {
+  const tr = new Array(h.length).fill(null);
+  for (let i = 1; i < h.length; i++) {
+    const t1 = h[i]-l[i];
+    const t2 = Math.abs(h[i]-c[i-1]);
+    const t3 = Math.abs(l[i]-c[i-1]);
+    tr[i] = Math.max(t1,t2,t3);
+  }
+  const atr = new Array(h.length).fill(null);
+  let avg = tr.slice(1,n+1).reduce((a,b)=>a+b,0)/n;
+  for (let i = n; i < h.length; i++) {
+    atr[i] = avg;
+    if (i < h.length-1) avg = (avg*(n-1)+tr[i+1])/n;
+  }
+  // Signals: atr low (bottom 20%) = buy (volatility squeeze), atr high (top 20%) = sell
+  const valid = atr.filter(v=>v!==null);
+  if (valid.length===0) return { atr, signals: new Array(h.length).fill(null) };
+  valid.sort((a,b)=>a-b);
+  const lo = valid[Math.floor(valid.length*0.2)];
+  const hi = valid[Math.floor(valid.length*0.8)];
+  const signals = atr.map(v=>v==null?null:v<lo?'buy':v>hi?'sell':'none');
+  return { atr, signals };
+}
+
+function calcKDJ(h, l, c, n, k1, d1) {
+  const rsv = new Array(h.length).fill(null);
+  const kArr = new Array(h.length).fill(null);
+  const dArr = new Array(h.length).fill(null);
+  const jArr = new Array(h.length).fill(null);
+  for (let i = n-1; i < h.length; i++) {
+    const hh = Math.max(...h.slice(i-n+1,i+1));
+    const ll = Math.min(...l.slice(i-n+1,i+1));
+    rsv[i] = hh===ll?50:(c[i]-ll)/(hh-ll)*100;
+  }
+  // First K/D
+  let kVal = rsv[n-1];
+  let dVal = kVal;
+  kArr[n-1] = kVal; dArr[n-1] = dVal; jArr[n-1] = 3*kVal-2*dVal;
+  for (let i = n; i < h.length; i++) {
+    kVal = (kVal*(k1-1) + rsv[i])/k1;
+    dVal = (dVal*(d1-1) + kVal)/d1;
+    kArr[i] = kVal; dArr[i] = dVal; jArr[i] = 3*kVal-2*dVal;
+  }
+  const signals = new Array(h.length).fill(null);
+  for (let i = 1; i < h.length; i++) {
+    if (kArr[i]==null||dArr[i]==null) continue;
+    if (kArr[i-1]!==null && dArr[i-1]!==null && kArr[i-1]<dArr[i-1] && kArr[i]>dArr[i]) signals[i] = 'buy';
+    else if (kArr[i-1]!==null && dArr[i-1]!==null && kArr[i-1]>dArr[i-1] && kArr[i]<dArr[i]) signals[i] = 'sell';
+  }
+  return { k:kArr, d:dArr, j:jArr, rsv, signals };
+}
+
+// ==========================================================
+// 3. 参数管理
+// ==========================================================
+function getParams() {
+  const g = (sel) => document.querySelector(sel);
+  const gv = (sel) => parseFloat(g(sel).value);
+  return {
+    rsi: { n: gv('#sidebar [data-p=rsiN]'), ob: gv('#sidebar [data-p=rsiOb]'), os: gv('#sidebar [data-p=rsiOs]') },
+    macd: { fast: gv('#sidebar [data-p=macdFast]'), slow: gv('#sidebar [data-p=macdSlow]'), sig: gv('#sidebar [data-p=macdSig]') },
+    bb: { n: gv('#sidebar [data-p=bbN]'), k: gv('#sidebar [data-p=bbK]') },
+    atr: { n: gv('#sidebar [data-p=atrN]') },
+    kdj: { rsv: gv('#sidebar [data-p=kdjRsv]'), k: gv('#sidebar [data-p=kdjK]'), d: gv('#sidebar [data-p=kdjD]') }
+  };
+}
+
+// ==========================================================
+// 4. 图表渲染
+// ==========================================================
+let chartColors = {
+  price: '#2563eb', rsi: '#7c3aed', macdDif: '#7c3aed', macdDea: '#f59e0b',
+  bbMid: '#7c3aed', bbBand: '#9ca3af', atr: '#0284c7',
+  kdjK: '#7c3aed', kdjD: '#f59e0b', kdjJ: '#10b981',
+  buy: '#10b981', sell: '#dc2626'
+};
+
+function formatDate(d) {
+  if (!d) return '';
+  const s = String(d);
+  return s.slice(4,6)+'/'+s.slice(6,8);
+}
+
+function showError(msg) {
+  const el = document.getElementById('chartLegend');
+  el.textContent = msg;
+  el.style.color = '#dc2626';
+}
+
+function renderChart() {
+  if (!stockData) { showError('请先加载股票数据'); return; }
+  const p = getParams();
+  const d = stockData;
+  const labels = d.dates.map(formatDate);
+  const N = d.close.length;
+
+  // Compute indicators
+  const rsi = calcRSI(d.close, p.rsi.n, p.rsi.ob, p.rsi.os);
+  const macd = calcMACD(d.close, p.macd.fast, p.macd.slow, p.macd.sig);
+  const bb = calcBB(d.close, p.bb.n, p.bb.k);
+  const atr = calcATR(d.high, d.low, d.close, p.atr.n);
+  const kdj = calcKDJ(d.high, d.low, d.close, p.kdj.rsv, p.kdj.k, p.kdj.d);
+
+  // Stats
+  const last = d.close[N-1]||0;
+  const s = (arr) => arr[N-1];
+  document.getElementById('sClose').textContent = last.toFixed(2);
+  document.getElementById('sRsi').textContent = s(rsi.rsi)!==null?s(rsi.rsi).toFixed(1):'—';
+  document.getElementById('sMacd').textContent = s(macd.dif)!==null?s(macd.dif).toFixed(2):'—';
+  document.getElementById('sBb').textContent = s(bb.pctB)!==null?s(bb.pctB).toFixed(2):'—';
+  document.getElementById('sAtr').textContent = s(atr.atr)!==null?s(atr.atr).toFixed(2):'—';
+
+  // Signals
+  let buy=[], sell=[];
+  const sig = (arr, b, s) => { const v = arr[N-1]; if(v==='buy') buy.push(b); if(v==='sell') sell.push(s); };
+  sig(rsi.signals, 'RSI超卖', 'RSI超买');
+  sig(macd.signals, 'MACD金叉', 'MACD死叉');
+  sig(bb.signals, '布林触碰下轨', '布林触碰上轨');
+  sig(kdj.signals, 'KDJ金叉', 'KDJ死叉');
+  document.getElementById('buySignals').textContent = buy.join(', ')||'无';
+  document.getElementById('sellSignals').textContent = sell.join(', ')||'无';
+
+  // Build datasets
+  const ds = [];
+
+  // Price - always on left axis
+  ds.push({ label: '收盘价', data: d.close, borderColor: '#2563eb', borderWidth: 1.8, pointRadius: 0, yAxisID: 'y', order: 10 });
+
+  // Tab-specific datasets
+  if (currentTab === 'rsi') {
+    ds.push({ label: 'RSI', data: rsi.rsi, borderColor: '#7c3aed', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y2', order: 9 });
+    ds.push({ label: '', data: labels.map(()=>p.rsi.ob), borderColor: 'rgba(220,38,38,0.4)', borderWidth: 0.8, borderDash: [5,3], pointRadius: 0, yAxisID: 'y2', order: 1 });
+    ds.push({ label: '', data: labels.map(()=>p.rsi.os), borderColor: 'rgba(16,185,129,0.4)', borderWidth: 0.8, borderDash: [5,3], pointRadius: 0, yAxisID: 'y2', order: 1 });
+    ds.push({ label: '', data: labels.map(()=>50), borderColor: 'rgba(0,0,0,0.08)', borderWidth: 0.5, borderDash: [2,2], pointRadius: 0, yAxisID: 'y2', order: 1 });
+  }
+  if (currentTab === 'macd') {
+    ds.push({ label: 'DIF', data: macd.dif, borderColor: '#7c3aed', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y2', order: 9 });
+    ds.push({ label: 'DEA', data: macd.dea, borderColor: '#f59e0b', borderWidth: 1.3, borderDash: [4,3], pointRadius: 0, yAxisID: 'y2', order: 8 });
+    ds.push({ label: '柱', data: macd.hist, borderColor: 'transparent', backgroundColor: macd.hist.map(v=>v===null?'transparent':v>=0?'rgba(220,38,38,0.6)':'rgba(16,185,129,0.6)'), borderWidth: 0, pointRadius: 0, yAxisID: 'y2', order: 7 });
+    ds.push({ label: '', data: labels.map(()=>0), borderColor: 'rgba(0,0,0,0.12)', borderWidth: 0.5, pointRadius: 0, yAxisID: 'y2', order: 1 });
+  }
+  if (currentTab === 'bb') {
+    ds.push({ label: '中轨', data: bb.mid, borderColor: '#7c3aed', borderWidth: 1.2, pointRadius: 0, yAxisID: 'y', order: 9 });
+    ds.push({ label: '上轨', data: bb.upper, borderColor: '#9ca3af', borderWidth: 0.8, borderDash: [3,3], pointRadius: 0, yAxisID: 'y', order: 8 });
+    ds.push({ label: '下轨', data: bb.lower, borderColor: '#9ca3af', borderWidth: 0.8, borderDash: [3,3], pointRadius: 0, yAxisID: 'y', order: 8 });
+  }
+  if (currentTab === 'atr') {
+    ds.push({ label: 'ATR', data: atr.atr, borderColor: '#0284c7', borderWidth: 1.8, pointRadius: 0, yAxisID: 'y2', order: 9 });
+  }
+  if (currentTab === 'kdj') {
+    ds.push({ label: 'K', data: kdj.k, borderColor: '#7c3aed', borderWidth: 1.5, pointRadius: 0, yAxisID: 'y2', order: 9 });
+    ds.push({ label: 'D', data: kdj.d, borderColor: '#f59e0b', borderWidth: 1.3, borderDash: [4,3], pointRadius: 0, yAxisID: 'y2', order: 8 });
+    ds.push({ label: 'J', data: kdj.j, borderColor: '#10b981', borderWidth: 1.2, borderDash: [2,2], pointRadius: 0, yAxisID: 'y2', order: 7 });
+    ds.push({ label: '', data: labels.map(()=>80), borderColor: 'rgba(220,38,38,0.3)', borderWidth: 0.6, borderDash: [4,3], pointRadius: 0, yAxisID: 'y2', order: 1 });
+    ds.push({ label: '', data: labels.map(()=>20), borderColor: 'rgba(16,185,129,0.3)', borderWidth: 0.6, borderDash: [4,3], pointRadius: 0, yAxisID: 'y2', order: 1 });
+  }
+
+  // Y axes
+  const hasY2 = ['rsi','macd','atr','kdj'].includes(currentTab);
+  const y2Label = { rsi:'RSI',macd:'MACD',atr:'ATR',kdj:'KDJ' }[currentTab]||'';
+  const sc = {
+    x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+    y: {
+      type: logScale ? 'logarithmic' : 'linear',
+      position: 'left',
+      title: { display: true, text: '价格', font: { size: 10 } },
+      ticks: { font: { size: 9 } },
+      grid: { color: 'rgba(0,0,0,0.06)' }
+    }
+  };
+  if (hasY2) {
+    sc.y2 = {
+      position: 'right',
+      title: { display: true, text: y2Label, font: { size: 10 } },
+      ticks: { font: { size: 9 } },
+      grid: { display: false }
+    };
+    if (currentTab === 'rsi') { sc.y2.min = 0; sc.y2.max = 100; }
+    if (currentTab === 'kdj') { sc.y2.min = -20; sc.y2.max = 120; }
+  }
+
+  // Destroy old chart
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  try {
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: ds },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const v = ctx.parsed.y;
+                if (v === null || v === undefined) return '';
+                const label = ctx.dataset.label || '';
+                return label ? label + ': ' + v.toFixed(2) : '';
+              }
+            }
+          }
+        },
+        scales: sc
+      }
+    });
+  } catch(e) {
+    showError('Chart error: ' + e.message);
+    return;
+  }
+
+  // Update title
+  const titles = { rsi:'RSI — 相对强弱指标', macd:'MACD — 指数平滑异同移动平均线', bb:'布林带 — Bollinger Bands', atr:'ATR — 平均真实波幅', kdj:'KDJ — 随机指标' };
+  const legends = { rsi:'价格走势（左轴）· RSI（右轴）· 超买/超卖线', macd:'价格走势（左轴）· DIF/DEA/柱状图（右轴）', bb:'价格走势 · 中轨（紫）· 上下轨（灰虚线）', atr:'价格走势（左轴）· ATR（右轴）', kdj:'价格走势（左轴）· K/D/J（右轴）' };
+  document.getElementById('chartTitle').textContent = titles[currentTab]||'';
+  let sub = '';
+  if (currentTab==='rsi') sub = 'N='+p.rsi.n+' 超买='+p.rsi.ob+' 超卖='+p.rsi.os;
+  else if (currentTab==='macd') sub = p.macd.fast+'/'+p.macd.slow+'/'+p.macd.sig;
+  else if (currentTab==='bb') sub = 'N='+p.bb.n+' '+p.bb.k+'σ';
+  else if (currentTab==='atr') sub = 'N='+p.atr.n;
+  else if (currentTab==='kdj') sub = p.kdj.rsv+'/'+p.kdj.k+'/'+p.kdj.d;
+  document.getElementById('chartSub').textContent = sub;
+  const leg = document.getElementById('chartLegend');
+  leg.textContent = legends[currentTab]||'';
+  leg.style.color = '#9ca3af';
+}
+// ==========================================================
+// 5. UI 交互
+// ==========================================================
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.ind===tab));
+  renderChart();
+}
+
+function toggleVis(name) {
+  const el = document.querySelector(`[data-vis=${name}]`);
+  el.classList.toggle('on');
+  renderChart();
+}
+
+// Init
+function init() {
+  if (!loadPreset('兆易创新')) return;
+  renderChart();
+}
+
+// Event listeners
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (tab) switchTab(tab.dataset.tab);
+});
+
+document.getElementById('sidebar').addEventListener('click', e => {
+  const panel = e.target.closest('.panel');
+  if (panel && !e.target.closest('.tg') && !e.target.closest('input')) {
+    switchTab(panel.dataset.ind);
+  }
+  const tg = e.target.closest('.tg');
+  if (tg) toggleVis(tg.dataset.vis);
+});
+
+document.getElementById('recalcBtn').addEventListener('click', renderChart);
+// Auto-recalc on parameter change
+document.querySelectorAll('#sidebar input').forEach(el => {
+  el.addEventListener('input', () => {
+    // Update slider display
+    if (el.type === 'range') {
+      const v = parseFloat(el.value);
+      el.nextElementSibling.textContent = Number.isInteger(v) ? v : v.toFixed(1);
+    }
+    renderChart();
+  });
+  el.addEventListener('change', renderChart);
+});
+
+// Range sliders update value display
+document.querySelectorAll('input[type=range]').forEach(el => {
+  el.addEventListener('input', () => {
+    el.nextElementSibling.textContent = parseFloat(el.value) + (el.step==='0.5'&&Number.isInteger(parseFloat(el.value)*2)?'':'.0');
+    // Format display
+    const v = parseFloat(el.value);
+    el.nextElementSibling.textContent = Number.isInteger(v)?v:v.toFixed(1);
+  });
+});
+
+document.getElementById('scaleToggle').addEventListener('click', e => {
+  logScale = !logScale;
+  e.target.textContent = logScale ? '对数坐标' : '线性坐标';
+  renderChart();
+});
+
+// Stock code input toggle
+document.getElementById('stockSelect').addEventListener('change', e => {
+  const input = document.getElementById('stockCodeInput');
+  input.style.display = e.target.value === '__custom__' ? 'inline-block' : 'none';
+  if (e.target.value === '__custom__') input.focus();
+});
+
+async function fetchStock(code) {
+  const loading = document.getElementById('loading');
+  loading.classList.remove('hidden');
+  try {
+    const resp = await fetch(`/api/stock?code=${code}`);
+    const data = await resp.json();
+    if (data.error) { alert('获取数据失败: ' + data.error); return false; }
+    if (!data.dates || data.dates.length < 30) { alert('数据不足（少于30个交易日）'); return false; }
+    stockData = {
+      dates: data.dates, open: data.open, high: data.high,
+      low: data.low, close: data.close, vol: data.vol
+    };
+    stockName = (data.name || code) + ' (' + code + ')';
+    renderChart();
+    return true;
+  } catch(e) {
+    alert('网络请求失败: ' + e.message);
+    return false;
+  } finally {
+    loading.classList.add('hidden');
+  }
+}
+
+document.getElementById('loadBtn').addEventListener('click', () => {
+  const sel = document.getElementById('stockSelect');
+  const val = sel.value;
+  if (val === '__upload__') {
+    document.getElementById('csvInput').click();
+    return;
+  }
+  if (val === '__custom__') {
+    const code = document.getElementById('stockCodeInput').value.trim();
+    if (!code || code.length !== 6) { alert('请输入6位股票代码'); return; }
+    fetchStock(code);
+    return;
+  }
+  // Try preset first, then fetch
+  if (STOCK_PRESETS[val]) {
+    loadPreset(val);
+    renderChart();
+  } else {
+    fetchStock(val);
+  }
+});
+
+document.getElementById('csvBtn').addEventListener('click', () => {
+  document.getElementById('stockSelect').value = '__upload__';
+  document.getElementById('csvInput').click();
+});
+
+document.getElementById('csvInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    const data = parseCSV(evt.target.result);
+    if (data) {
+      stockData = data;
+      stockName = file.name;
+      renderChart();
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  // Reset params to defaults
+  document.querySelector('[data-p=rsiN]').value = 14;
+  document.querySelector('[data-p=rsiOb]').value = 70;
+  document.querySelector('[data-p=rsiOs]').value = 30;
+  document.querySelector('[data-p=macdFast]').value = 12;
+  document.querySelector('[data-p=macdSlow]').value = 26;
+  document.querySelector('[data-p=macdSig]').value = 9;
+  document.querySelector('[data-p=bbN]').value = 20;
+  document.querySelector('[data-p=bbK]').value = 2;
+  document.querySelector('[data-p=atrN]').value = 14;
+  document.querySelector('[data-p=kdjRsv]').value = 9;
+  document.querySelector('[data-p=kdjK]').value = 3;
+  document.querySelector('[data-p=kdjD]').value = 3;
+  // Update slider displays
+  document.querySelectorAll('input[type=range]').forEach(el => {
+    el.nextElementSibling.textContent = el.value;
+  });
+  document.getElementById('stockSelect').value = '603986';
+  document.getElementById('stockCodeInput').style.display = 'none';
+  if (!logScale) { logScale = true; document.getElementById('scaleToggle').textContent = '对数坐标'; }
+  // Reload default stock
+  if (STOCK_PRESETS['603986']) {
+    loadPreset('603986');
+    renderChart();
+  } else {
+    fetchStock('603986');
+  }
+});
+
+// Start
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof Chart === 'undefined') {
+    document.getElementById('chartTitle').textContent = 'Chart.js 加载失败';
+    document.getElementById('chartSub').textContent = '请检查网络连接或刷新页面';
+    return;
+  }
+  init();
+});
+</script>
+</body>
+</html>

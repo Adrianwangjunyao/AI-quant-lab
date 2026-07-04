@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>兆易创新(603986.SH) 近一年行情看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --bg-primary: #f5f7fa;
+    --bg-card: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #6b7280;
+    --accent-red: #ef5350;
+    --accent-green: #26a69a;
+    --border-color: #e5e7eb;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 24px;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+  
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 32px 40px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 600;
+  }
+  .header .subtitle {
+    opacity: 0.85;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .header .stock-code {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 20px;
+    border-radius: 24px;
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+  }
+  .stat-card .label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .stat-card .value {
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .stat-card .change {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .up { color: var(--accent-red); }
+  .down { color: var(--accent-green); }
+
+  /* Chart Cards */
+  .chart-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+  }
+  .chart-card .chart-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chart-card .chart-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .chart-card .chart-title .dot.price { background: var(--accent-red); }
+  .chart-card .chart-title .dot.volume { background: #42a5f5; }
+  .chart-container {
+    width: 100%;
+    height: 480px;
+  }
+
+  /* Data Table */
+  .table-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+    overflow: auto;
+  }
+  .table-card .table-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    background: #f8fafc;
+    padding: 10px 12px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+  thead th:first-child { text-align: left; }
+  tbody td {
+    padding: 8px 12px;
+    text-align: right;
+    border-bottom: 1px solid #f1f3f5;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody td:first-child { text-align: left; font-weight: 500; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody tr.down td { color: var(--accent-green); }
+  tbody tr.up td { color: var(--accent-red); }
+
+  .footer {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>兆易创新 行情看板</h1>
+      <div class="subtitle">GigaDevice · 近一年日线数据 (2025/07/02 - 2026/07/02)</div>
+    </div>
+    <div class="stock-code">603986.SH</div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <!-- Price + Volume Chart -->
+  <div class="chart-card">
+    <div class="chart-title">
+      <span class="dot price"></span>
+      每日收盘价与成交量
+    </div>
+    <div class="chart-container" id="mainChart"></div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="table-card">
+    <div class="table-title">交易数据明细</div>
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>交易日期</th>
+          <th>开盘价</th>
+          <th>最高价</th>
+          <th>最低价</th>
+          <th>收盘价</th>
+          <th>涨跌幅(%)</th>
+          <th>成交量(万手)</th>
+          <th>成交额(亿元)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    数据来源：Tushare Pro · 生成时间：2026-07-02
+  </div>
+</div>
+
+<script>
+// ====== 原始数据 ======
+const rawData = [
+  {date:'20260702',open:721.0,high:731.99,low:694.81,close:694.81,vol:452436.41,amount:32120680.671,pct:-9.9999},
+  {date:'20260701',open:803.0,high:843.38,low:753.0,close:772.01,vol:539702.17,amount:43202850.798,pct:-5.2748},
+  {date:'20260630',open:810.0,high:833.0,low:781.11,close:815.0,vol:449646.79,amount:36399346.133,pct:-2.9762},
+  {date:'20260629',open:779.0,high:846.66,low:750.0,close:840.0,vol:541208.83,amount:43149934.642,pct:9.0909},
+  {date:'20260626',open:753.0,high:779.0,low:732.52,close:770.0,vol:493925.62,amount:37418302.893,pct:-0.6721},
+  {date:'20260625',open:740.0,high:775.39,low:735.0,close:775.21,vol:508678.36,amount:38432771.374,pct:9.9448},
+  {date:'20260624',open:641.0,high:705.09,low:630.93,close:705.09,vol:598219.31,amount:39944848.281,pct:10.0002},
+  {date:'20260623',open:680.0,high:688.8,low:636.0,close:640.99,vol:592913.79,amount:39089605.51,pct:-7.0625},
+  {date:'20260622',open:643.0,high:689.7,low:635.0,close:689.7,vol:525830.95,amount:34699907.688,pct:9.6502},
+  {date:'20260618',open:594.0,high:644.64,low:586.6,close:629.0,vol:591573.18,amount:37016387.91,pct:7.3306},
+  {date:'20260617',open:521.0,high:586.04,low:521.0,close:586.04,vol:568000.3,amount:31598894.526,pct:10.0008},
+  {date:'20260616',open:526.0,high:542.84,low:517.71,close:532.76,vol:427785.07,amount:22673887.613,pct:2.8494},
+  {date:'20260615',open:494.97,high:519.0,low:476.66,close:518.0,vol:475784.48,amount:23934989.159,pct:7.5872},
+  {date:'20260612',open:508.0,high:510.0,low:481.0,close:481.47,vol:407085.44,amount:20201561.53,pct:-0.4199},
+  {date:'20260611',open:480.52,high:486.0,low:471.0,close:483.5,vol:296991.43,amount:14211235.696,pct:0.5532},
+  {date:'20260610',open:489.11,high:497.26,low:475.65,close:480.84,vol:329972.1,amount:15988381.63,pct:-3.9281},
+  {date:'20260609',open:493.0,high:502.88,low:477.03,close:500.5,vol:419683.33,amount:20592669.384,pct:5.5885},
+  {date:'20260608',open:461.11,high:490.7,low:451.0,close:474.01,vol:434474.74,amount:20573934.017,pct:-2.8668},
+  {date:'20260605',open:507.0,high:519.8,low:484.9,close:488.0,vol:547135.42,amount:27565110.091,pct:-7.8045},
+  {date:'20260604',open:487.05,high:538.0,low:485.01,close:529.31,vol:563350.88,amount:29302244.793,pct:7.5331},
+  {date:'20260603',open:478.89,high:510.0,low:477.0,close:492.23,vol:581929.78,amount:28838934.89,pct:3.695},
+  {date:'20260602',open:471.0,high:480.66,low:448.11,close:474.69,vol:490192.77,amount:23013728.744,pct:1.4295},
+  {date:'20260601',open:476.0,high:489.96,low:455.0,close:468.0,vol:521586.48,amount:24676174.086,pct:0.212},
+  {date:'20260529',open:492.66,high:496.0,low:464.91,close:467.01,vol:558125.42,amount:26715074.211,pct:-3.3106},
+  {date:'20260528',open:495.0,high:499.5,low:470.0,close:483.0,vol:623792.2,amount:30240489.779,pct:-6.064},
+  {date:'20260527',open:541.0,high:552.82,low:500.0,close:514.18,vol:667260.41,amount:35341222.581,pct:-2.288},
+  {date:'20260526',open:510.0,high:538.02,low:491.2,close:526.22,vol:643383.92,amount:33017657.438,pct:2.2084},
+  {date:'20260525',open:478.11,high:515.61,low:461.0,close:515.6,vol:593614.11,amount:29387713.886,pct:9.997},
+  {date:'20260522',open:448.0,high:472.99,low:439.0,close:468.74,vol:637968.89,amount:28932072.443,pct:8.5298},
+  {date:'20260521',open:445.02,high:464.83,low:427.33,close:431.9,vol:632397.68,amount:28199401.936,pct:-2.9482},
+  {date:'20260520',open:408.0,high:445.02,low:407.8,close:445.02,vol:610125.55,amount:26523529.101,pct:10.001},
+  {date:'20260519',open:390.0,high:410.0,low:380.02,close:404.56,vol:553101.11,amount:21805396.34,pct:1.14},
+  {date:'20260518',open:408.58,high:412.87,low:396.34,close:400.0,vol:687984.34,amount:27876373.984,pct:6.57},
+  {date:'20260515',open:353.0,high:384.0,low:345.48,close:375.34,vol:624368.11,amount:22792196.753,pct:5.3763},
+  {date:'20260514',open:365.05,high:373.5,low:354.99,close:356.19,vol:408364.64,amount:14829461.848,pct:-2.4137},
+  {date:'20260513',open:344.0,high:366.71,low:339.33,close:365.0,vol:484982.84,amount:17127399.574,pct:3.2386},
+  {date:'20260512',open:362.14,high:362.2,low:349.2,close:353.55,vol:405595.51,amount:14360590.982,pct:-2.3693},
+  {date:'20260511',open:350.1,high:367.51,low:347.01,close:362.13,vol:575079.07,amount:20673848.905,pct:8.3897},
+  {date:'20260508',open:341.0,high:343.3,low:331.8,close:334.1,vol:440832.73,amount:14821436.654,pct:-4.5865},
+  {date:'20260507',open:347.0,high:357.36,low:339.0,close:350.16,vol:523878.82,amount:18174549.786,pct:1.705},
+  {date:'20260506',open:330.0,high:344.29,low:330.0,close:344.29,vol:423425.5,amount:14465204.492,pct:10.0003},
+  {date:'20260430',open:320.0,high:321.0,low:306.48,close:312.99,vol:587965.14,amount:18516847.87,pct:1.3273},
+  {date:'20260429',open:303.01,high:311.66,low:297.0,close:308.89,vol:419199.8,amount:12787874.125,pct:0.452},
+  {date:'20260428',open:305.0,high:319.33,low:302.02,close:307.5,vol:367942.94,amount:11421765.607,pct:1.3447},
+  {date:'20260427',open:301.59,high:309.58,low:297.75,close:303.42,vol:316354.78,amount:9594446.068,pct:1.9214},
+  {date:'20260424',open:305.0,high:310.0,low:292.81,close:297.7,vol:349105.37,amount:10436275.525,pct:-2.3294},
+  {date:'20260423',open:326.01,high:326.02,low:301.9,close:304.8,vol:441997.3,amount:13709630.158,pct:-2.9238},
+  {date:'20260422',open:303.5,high:314.58,low:302.51,close:313.98,vol:341661.95,amount:10559646.646,pct:2.5174},
+  {date:'20260421',open:290.8,high:309.0,low:288.25,close:306.27,vol:425834.06,amount:12827436.178,pct:5.4141},
+  {date:'20260420',open:293.0,high:295.96,low:287.12,close:290.54,vol:325642.8,amount:9489709.816,pct:0.5468},
+  {date:'20260417',open:284.0,high:295.66,low:282.9,close:288.96,vol:406321.12,amount:11768331.454,pct:0.7777},
+  {date:'20260416',open:270.1,high:287.0,low:268.59,close:286.73,vol:409336.72,amount:11431621.262,pct:4.646},
+  {date:'20260415',open:285.0,high:287.65,low:271.98,close:274.0,vol:396972.6,amount:11071707.52,pct:-2.1464},
+  {date:'20260414',open:269.5,high:281.23,low:266.39,close:280.01,vol:466205.21,amount:12861207.284,pct:6.817},
+  {date:'20260413',open:261.0,high:269.84,low:260.9,close:262.14,vol:412420.92,amount:10896229.97,pct:-1.1128},
+  {date:'20260410',open:255.49,high:268.32,low:255.24,close:265.09,vol:534766.82,amount:14080294.764,pct:5.8286},
+  {date:'20260409',open:250.0,high:253.49,low:243.9,close:250.49,vol:444682.57,amount:11053684.068,pct:-2.1371},
+  {date:'20260408',open:250.11,high:256.96,low:243.08,close:255.96,vol:753325.37,amount:18866761.51,pct:2.5234},
+  {date:'20260407',open:253.1,high:255.96,low:248.81,close:249.66,vol:198471.58,amount:5011332.74,pct:0.2248},
+  {date:'20260403',open:250.99,high:254.6,low:247.5,close:249.1,vol:197471.97,amount:4948392.995,pct:0.8543},
+  {date:'20260402',open:257.86,high:259.8,low:245.6,close:246.99,vol:252974.31,amount:6367107.416,pct:-3.1412},
+  {date:'20260401',open:250.0,high:256.1,low:243.7,close:255.0,vol:387957.83,amount:9693139.251,pct:7.0979},
+  {date:'20260331',open:249.9,high:252.0,low:236.86,close:238.1,vol:427623.34,amount:10377669.656,pct:-6.9377},
+  {date:'20260330',open:252.0,high:259.54,low:250.03,close:255.85,vol:214696.45,amount:5470168.275,pct:-1.0864},
+  {date:'20260327',open:248.98,high:260.18,low:240.25,close:258.66,vol:289773.43,amount:7291597.265,pct:-1.2748},
+  {date:'20260326',open:268.0,high:268.7,low:260.0,close:262.0,vol:350773.07,amount:9217935.594,pct:-5.8908},
+  {date:'20260325',open:275.15,high:285.8,low:275.14,close:278.4,vol:283762.75,amount:7947975.811,pct:1.7135},
+  {date:'20260324',open:277.99,high:278.0,low:256.88,close:273.71,vol:336914.68,amount:8936300.507,pct:0.1317},
+  {date:'20260323',open:277.0,high:282.88,low:271.0,close:273.35,vol:282141.91,amount:7806213.396,pct:-5.8063},
+  {date:'20260320',open:305.55,high:306.7,low:290.0,close:290.2,vol:312536.44,amount:9259119.964,pct:-4.4389},
+  {date:'20260319',open:300.0,high:309.71,low:297.0,close:303.68,vol:312145.67,amount:9443689.781,pct:-2.4321},
+  {date:'20260318',open:305.1,high:313.68,low:302.0,close:311.25,vol:420513.52,amount:12995566.647,pct:5.152},
+  {date:'20260317',open:306.5,high:313.0,low:295.88,close:296.0,vol:390000.85,amount:11825489.341,pct:-3.3185},
+  {date:'20260316',open:280.0,high:306.16,low:277.0,close:306.16,vol:462735.64,amount:13600507.644,pct:9.9989},
+  {date:'20260313',open:270.78,high:285.67,low:270.78,close:278.33,vol:226137.49,amount:6301123.525,pct:1.2919},
+  {date:'20260312',open:279.83,high:283.83,low:272.43,close:274.78,vol:172327.47,amount:4768478.191,pct:-2.3976},
+  {date:'20260311',open:288.04,high:290.83,low:281.32,close:281.53,vol:216498.69,amount:6176121.565,pct:-1.3698},
+  {date:'20260310',open:284.1,high:286.5,low:281.18,close:285.44,vol:233537.42,amount:6640032.786,pct:3.3866},
+  {date:'20260309',open:273.0,high:277.7,low:264.0,close:276.09,vol:283545.65,amount:7649552.153,pct:-3.1229},
+  {date:'20260306',open:277.9,high:288.88,low:277.56,close:284.99,vol:208575.77,amount:5931718.814,pct:0.7744},
+  {date:'20260305',open:288.16,high:289.88,low:280.23,close:282.8,vol:255299.73,amount:7288806.325,pct:1.3366},
+  {date:'20260304',open:272.89,high:290.0,low:272.89,close:279.07,vol:326916.32,amount:9250036.179,pct:2.2646},
+  {date:'20260303',open:295.0,high:296.1,low:272.59,close:272.89,vol:333293.65,amount:9356849.949,pct:-6.9111},
+  {date:'20260302',open:290.87,high:299.98,low:290.55,close:293.15,vol:185132.28,amount:5453801.345,pct:-2.2833},
+  {date:'20260227',open:303.5,high:306.0,low:296.69,close:300.0,vol:220968.92,amount:6629753.921,pct:-3.0381},
+  {date:'20260226',open:316.0,high:316.0,low:306.05,close:309.4,vol:231052.85,amount:7169784.208,pct:-0.6167},
+  {date:'20260225',open:316.0,high:317.01,low:301.96,close:311.32,vol:285728.01,amount:8846026.25,pct:-3.631},
+  {date:'20260224',open:317.5,high:331.16,low:311.0,close:323.05,vol:302545.4,amount:9709224.737,pct:4.6485},
+  {date:'20260213',open:303.24,high:317.6,low:301.0,close:308.7,vol:299253.71,amount:9335277.999,pct:1.8006},
+  {date:'20260212',open:290.5,high:305.0,low:285.0,close:303.24,vol:300674.34,amount:8842653.413,pct:6.5533},
+  {date:'20260211',open:285.0,high:286.5,low:280.5,close:284.59,vol:173415.5,amount:4922177.744,pct:-1.8317},
+  {date:'20260210',open:287.13,high:291.5,low:284.17,close:289.9,vol:215965.54,amount:6225459.477,pct:-1.0513},
+  {date:'20260209',open:283.97,high:294.44,low:280.2,close:292.98,vol:283055.21,amount:8148122.681,pct:6.0868},
+  {date:'20260206',open:271.0,high:280.51,low:268.2,close:276.17,vol:186267.14,amount:5136089.771,pct:-0.5653},
+  {date:'20260205',open:269.94,high:279.52,low:268.21,close:277.74,vol:229053.52,amount:6300761.896,pct:-1.6258},
+  {date:'20260204',open:285.99,high:289.5,low:279.0,close:282.33,vol:270957.63,amount:7646576.014,pct:-3.5},
+  {date:'20260203',open:294.01,high:296.6,low:285.2,close:292.57,vol:302213.54,amount:8812712.425,pct:3.2394},
+  {date:'20260202',open:300.8,high:306.09,low:283.39,close:283.39,vol:416288.29,amount:12094639.949,pct:-10.0006},
+  {date:'20260130',open:315.0,high:320.88,low:308.01,close:314.88,vol:376199.44,amount:11864831.688,pct:2.4},
+  {date:'20260129',open:329.88,high:331.07,low:306.99,close:307.5,vol:334245.81,amount:10593801.175,pct:-4.9988},
+  {date:'20260128',open:313.88,high:328.58,low:313.88,close:323.68,vol:377179.92,amount:12160363.682,pct:5.344},
+  {date:'20260127',open:290.0,high:312.42,low:286.67,close:307.26,vol:380043.68,amount:11465752.144,pct:5.0103},
+  {date:'20260126',open:300.0,high:308.0,low:290.5,close:292.6,vol:272674.78,amount:8059039.738,pct:-1.5643},
+  {date:'20260123',open:296.0,high:310.68,low:295.0,close:297.25,vol:349379.69,amount:10491781.699,pct:-1.3998},
+  {date:'20260122',open:320.0,high:320.02,low:296.7,close:301.47,vol:450616.97,amount:13710967.282,pct:-2.0088},
+  {date:'20260121',open:295.0,high:314.8,low:293.01,close:307.65,vol:404653.97,amount:12395709.223,pct:5.3596},
+  {date:'20260120',open:282.9,high:297.1,low:282.88,close:292.0,vol:389782.32,amount:11377429.957,pct:1.2307},
+  {date:'20260119',open:280.6,high:292.0,low:278.88,close:288.45,vol:463229.95,amount:13241198.626,pct:2.8489},
+  {date:'20260116',open:260.03,high:280.46,low:257.5,close:280.46,vol:553362.13,amount:15020119.557,pct:10.0016},
+  {date:'20260115',open:249.61,high:257.55,low:248.2,close:254.96,vol:283898.37,amount:7180430.118,pct:0.7747},
+  {date:'20260114',open:270.0,high:271.0,low:249.05,close:253.0,vol:447321.34,amount:11546200.174,pct:-3.9848},
+  {date:'20260113',open:266.0,high:275.0,low:257.49,close:263.5,vol:461517.76,amount:12238674.369,pct:0.6378},
+  {date:'20260112',open:255.22,high:264.04,low:254.0,close:261.83,vol:403813.07,amount:10435793.484,pct:4.7111},
+  {date:'20260109',open:254.55,high:254.55,low:244.32,close:250.05,vol:395238.31,amount:9873211.263,pct:-3.3623},
+  {date:'20260108',open:259.0,high:267.0,low:256.91,close:258.75,vol:314109.13,amount:8210508.185,pct:-1.4286},
+  {date:'20260107',open:270.0,high:273.77,low:256.78,close:262.5,vol:545161.79,amount:14443385.672,pct:4.6734},
+  {date:'20260106',open:238.0,high:253.33,low:234.0,close:250.78,vol:507535.5,amount:12310629.498,pct:6.407},
+  {date:'20260105',open:221.32,high:235.68,low:221.0,close:235.68,vol:499283.82,amount:11560778.68,pct:10.0023},
+  {date:'20251231',open:228.01,high:228.88,low:212.58,close:214.25,vol:354571.19,amount:7741087.427,pct:-2.7109},
+  {date:'20251230',open:226.0,high:229.54,low:219.1,close:220.22,vol:271609.88,amount:6063612.93,pct:-3.3826},
+  {date:'20251229',open:225.71,high:234.44,low:225.0,close:227.93,vol:296019.01,amount:6772169.788,pct:0.423},
+  {date:'20251226',open:221.0,high:230.0,low:220.0,close:226.97,vol:296631.27,amount:6722806.56,pct:2.2387},
+  {date:'20251225',open:223.0,high:228.83,low:217.33,close:222.0,vol:259400.49,amount:5752598.105,pct:-0.9371},
+  {date:'20251224',open:220.0,high:225.0,low:216.2,close:224.1,vol:298409.62,amount:6590470.884,pct:3.0914},
+  {date:'20251223',open:216.99,high:221.33,low:215.0,close:217.38,vol:254297.87,amount:5543292.842,pct:0.425},
+  {date:'20251222',open:213.51,high:219.5,low:213.51,close:216.46,vol:253700.57,amount:5485534.765,pct:2.9732},
+  {date:'20251219',open:220.0,high:221.0,low:208.2,close:210.21,vol:332394.8,amount:7034876.943,pct:-1.9772},
+  {date:'20251218',open:203.5,high:218.88,low:203.5,close:214.45,vol:418524.71,amount:8887246.199,pct:6.0688},
+  {date:'20251217',open:197.01,high:202.87,low:195.95,close:202.18,vol:190501.58,amount:3802859.059,pct:2.1834},
+  {date:'20251216',open:203.0,high:205.46,low:196.13,close:197.86,vol:204824.72,amount:4078991.501,pct:-3.0858},
+  {date:'20251215',open:205.02,high:208.68,low:203.5,close:204.16,vol:175069.42,amount:3589589.515,pct:-2.73},
+  {date:'20251212',open:206.0,high:214.44,low:204.01,close:209.89,vol:215033.84,amount:4488267.448,pct:1.0009},
+  {date:'20251211',open:211.88,high:213.0,low:207.5,close:207.81,vol:188246.03,amount:3953045.79,pct:-0.4932},
+  {date:'20251210',open:209.09,high:210.2,low:203.5,close:208.84,vol:191810.21,amount:3972447.948,pct:-1.0002},
+  {date:'20251209',open:212.0,high:215.3,low:209.3,close:210.95,vol:210585.96,amount:4464451.196,pct:-1.3745},
+  {date:'20251208',open:208.62,high:216.97,low:207.53,close:213.89,vol:311307.02,amount:6624931.659,pct:3.4234},
+  {date:'20251205',open:210.92,high:211.0,low:205.5,close:206.81,vol:169817.36,amount:3517459.255,pct:-1.7109},
+  {date:'20251204',open:206.0,high:212.98,low:201.99,close:210.41,vol:247007.26,amount:5130378.877,pct:1.3536},
+  {date:'20251203',open:210.42,high:210.99,low:206.19,close:207.6,vol:170708.13,amount:3550298.44,pct:-1.3777},
+  {date:'20251202',open:211.78,high:216.79,low:208.1,close:210.5,vol:249243.69,amount:5283394.789,pct:-1.0901},
+  {date:'20251201',open:204.04,high:215.45,low:201.2,close:212.82,vol:382670.03,amount:8001361.362,pct:4.8374},
+  {date:'20251128',open:199.0,high:204.35,low:196.66,close:203.0,vol:215652.25,amount:4334514.87,pct:1.0654},
+  {date:'20251127',open:198.88,high:208.0,low:198.88,close:200.86,vol:319731.75,amount:6535638.163,pct:2.2188},
+  {date:'20251126',open:187.01,high:198.88,low:186.8,close:196.5,vol:297685.3,amount:5796501.768,pct:3.0847},
+  {date:'20251125',open:185.0,high:191.6,low:184.19,close:190.62,vol:364021.47,amount:6845489.696,pct:6.3846},
+  {date:'20251124',open:183.75,high:184.75,low:176.0,close:179.18,vol:340499.49,amount:6102558.863,pct:-1.8246},
+  {date:'20251121',open:189.0,high:190.57,low:182.51,close:182.51,vol:404416.09,amount:7512795.79,pct:-8.3325},
+  {date:'20251120',open:207.5,high:208.0,low:198.66,close:199.1,vol:217605.35,amount:4376548.543,pct:-1.6887},
+  {date:'20251119',open:200.25,high:205.5,low:199.03,close:202.52,vol:238818.63,amount:4835263.416,pct:0.0099},
+  {date:'20251118',open:205.28,high:207.58,low:201.57,close:202.5,vol:274378.46,amount:5596610.403,pct:-2.4096},
+  {date:'20251117',open:207.81,high:214.74,low:206.36,close:207.5,vol:335060.74,amount:7029315.417,pct:0.8358},
+  {date:'20251114',open:216.0,high:216.49,low:205.78,close:205.78,vol:548633.27,amount:11531317.142,pct:-9.5473},
+  {date:'20251113',open:212.0,high:230.45,low:211.88,close:227.5,vol:626638.58,amount:14161665.405,pct:8.5919},
+  {date:'20251112',open:213.0,high:218.58,low:207.01,close:209.5,vol:349523.08,amount:7391713.965,pct:-3.4518},
+  {date:'20251111',open:223.6,high:227.01,low:216.71,close:216.99,vol:341924.9,amount:7601312.659,pct:-0.8997},
+  {date:'20251110',open:228.49,high:231.45,low:212.5,close:218.96,vol:385832.23,amount:8553969.468,pct:-0.9007},
+  {date:'20251107',open:222.68,high:227.89,low:219.55,close:220.95,vol:278989.18,amount:6232949.914,pct:-2.7509},
+  {date:'20251106',open:224.5,high:228.0,low:222.25,close:227.2,vol:343346.7,amount:7753801.39,pct:4.0341},
+  {date:'20251105',open:213.0,high:220.49,low:210.95,close:218.39,vol:335131.45,amount:7203205.727,pct:-2.9335},
+  {date:'20251104',open:231.0,high:231.22,low:222.5,close:224.99,vol:293367.81,amount:6624358.513,pct:-2.2208},
+  {date:'20251103',open:217.0,high:230.68,low:216.66,close:230.1,vol:462613.49,amount:10367480.649,pct:4.5909},
+  {date:'20251031',open:231.0,high:234.68,low:216.0,close:220.0,vol:492428.82,amount:10882575.346,pct:-5.1724},
+  {date:'20251030',open:246.24,high:247.0,low:231.78,close:232.0,vol:433654.43,amount:10345840.392,pct:-3.7943},
+  {date:'20251029',open:246.96,high:252.63,low:236.0,close:241.15,vol:503744.63,amount:12221563.111,pct:-2.3487},
+  {date:'20251028',open:236.5,high:254.44,low:234.58,close:246.95,vol:527296.42,amount:12909959.81,pct:1.5461},
+  {date:'20251027',open:230.0,high:243.19,low:222.83,close:243.19,vol:520916.18,amount:12070372.38,pct:10.0009},
+  {date:'20251024',open:214.0,high:221.88,low:212.0,close:221.08,vol:450618.12,amount:9805113.356,pct:6.8226},
+  {date:'20251023',open:205.98,high:208.1,low:200.39,close:206.96,vol:274058.48,amount:5585482.986,pct:-1.8821},
+  {date:'20251022',open:214.0,high:214.0,low:205.3,close:210.93,vol:371829.52,amount:7766034.297,pct:-3.6893},
+  {date:'20251021',open:211.0,high:222.0,low:209.66,close:219.01,vol:405117.22,amount:8794154.72,pct:5.1164},
+  {date:'20251020',open:207.73,high:215.0,low:203.03,close:208.35,vol:367244.06,amount:7696246.687,pct:3.5485},
+  {date:'20251017',open:208.12,high:211.5,low:201.0,close:201.21,vol:329357.84,amount:6777034.048,pct:-3.3248},
+  {date:'20251016',open:201.44,high:214.8,low:198.53,close:208.13,vol:458666.18,amount:9577597.463,pct:3.0296},
+  {date:'20251015',open:195.55,high:202.4,low:186.41,close:202.01,vol:390442.31,amount:7587280.731,pct:3.0663},
+  {date:'20251014',open:215.45,high:220.53,low:193.0,close:196.0,vol:522017.8,amount:10762183.994,pct:-5.7012},
+  {date:'20251013',open:201.5,high:214.9,low:201.5,close:207.85,vol:424815.14,amount:8843113.207,pct:-3.3346},
+  {date:'20251010',open:225.5,high:230.5,low:212.12,close:215.02,vol:443030.98,amount:9636636.022,pct:-4.6432},
+  {date:'20251009',open:222.0,high:234.63,low:218.6,close:225.49,vol:585389.77,amount:13293421.697,pct:5.715},
+  {date:'20250930',open:204.34,high:216.84,low:203.0,close:213.3,vol:597864.99,amount:12672064.936,pct:8.2027},
+  {date:'20250929',open:196.5,high:203.63,low:195.1,close:197.13,vol:434877.98,amount:8628937.828,pct:3.6381},
+  {date:'20250926',open:196.01,high:206.02,low:190.21,close:190.21,vol:435200.85,amount:8650850.074,pct:-3.6472},
+  {date:'20250925',open:199.0,high:204.5,low:193.1,close:197.41,vol:404275.91,amount:8001322.068,pct:-1.1962},
+  {date:'20250924',open:194.6,high:208.23,low:193.0,close:199.8,vol:507020.69,amount:10165505.184,pct:2.9525},
+  {date:'20250923',open:196.0,high:201.59,low:188.69,close:194.07,vol:399945.66,amount:7780830.608,pct:-0.482},
+  {date:'20250922',open:188.88,high:198.09,low:186.28,close:195.01,vol:411977.69,amount:8002507.023,pct:5.297},
+  {date:'20250919',open:194.31,high:195.88,low:184.91,close:185.2,vol:371918.21,amount:7051277.593,pct:-2.9757},
+  {date:'20250918',open:189.39,high:200.85,low:186.8,close:190.88,vol:590410.52,amount:11381851.203,pct:2.2937},
+  {date:'20250917',open:188.99,high:192.58,low:182.97,close:186.6,vol:339245.37,amount:6358605.811,pct:-1.3534},
+  {date:'20250916',open:189.0,high:196.8,low:186.89,close:189.16,vol:408562.21,amount:7810240.314,pct:-0.9322},
+  {date:'20250915',open:193.51,high:194.5,low:186.62,close:190.94,vol:495483.07,amount:9469855.424,pct:0.3838},
+  {date:'20250912',open:179.99,high:195.16,low:177.5,close:190.21,vol:710357.04,amount:13432520.618,pct:7.2089},
+  {date:'20250911',open:161.26,high:177.42,low:160.0,close:177.42,vol:554423.95,amount:9422962.073,pct:10.0006},
+  {date:'20250910',open:157.14,high:163.25,low:155.7,close:161.29,vol:334656.97,amount:5358368.655,pct:2.6344},
+  {date:'20250909',open:161.0,high:162.8,low:154.62,close:157.15,vol:327320.34,amount:5191824.525,pct:-4.0774},
+  {date:'20250908',open:161.93,high:169.0,low:159.15,close:163.83,vol:523714.75,amount:8602671.849,pct:2.6761},
+  {date:'20250905',open:150.0,high:163.99,low:145.8,close:159.56,vol:699487.7,amount:10700137.153,pct:3.6238},
+  {date:'20250904',open:169.0,high:171.07,low:153.98,close:153.98,vol:454980.53,amount:7284233.85,pct:-10.0006},
+  {date:'20250903',open:176.26,high:177.73,low:168.55,close:171.09,vol:441275.98,amount:7587032.736,pct:-2.7898},
+  {date:'20250902',open:179.28,high:188.0,low:173.05,close:176.0,vol:762852.37,amount:13736024.58,pct:0.6404},
+  {date:'20250901',open:164.11,high:174.88,low:157.0,close:174.88,vol:612797.12,amount:10223340.506,pct:10.0013},
+  {date:'20250829',open:161.8,high:162.0,low:156.4,close:158.98,vol:398005.86,amount:6325048.099,pct:-3.3262},
+  {date:'20250828',open:161.0,high:165.8,low:159.01,close:164.45,vol:494328.31,amount:8027959.133,pct:3.6689},
+  {date:'20250827',open:155.87,high:168.5,low:152.18,close:158.63,vol:623810.58,amount:10014123.48,pct:2.7396},
+  {date:'20250826',open:157.8,high:157.8,low:152.62,close:154.4,vol:382253.32,amount:5917649.65,pct:-2.1546},
+  {date:'20250825',open:159.0,high:163.5,low:152.88,close:157.8,vol:836197.6,amount:13172131.297,pct:4.5864},
+  {date:'20250822',open:135.12,high:150.88,low:135.08,close:150.88,vol:780790.54,amount:11210984.976,pct:10.0029},
+  {date:'20250821',open:132.09,high:139.71,low:132.09,close:137.16,vol:858971.49,amount:11832481.427,pct:7.9915},
+  {date:'20250820',open:123.0,high:127.25,low:122.01,close:127.01,vol:359897.59,amount:4494071.401,pct:3.0423},
+  {date:'20250819',open:125.48,high:128.88,low:122.85,close:123.26,vol:323175.2,amount:4046363.006,pct:-1.9411},
+  {date:'20250818',open:123.33,high:127.98,low:121.51,close:125.7,vol:328498.52,amount:4106567.032,pct:2.2783},
+  {date:'20250815',open:120.01,high:123.5,low:120.01,close:122.9,vol:211500.22,amount:2590294.402,pct:1.5619},
+  {date:'20250814',open:121.7,high:125.49,low:120.55,close:121.01,vol:314003.25,amount:3865198.49,pct:-0.3705},
+  {date:'20250813',open:120.49,high:123.0,low:119.94,close:121.46,vol:240986.54,amount:2925464.097,pct:0.8218},
+  {date:'20250812',open:118.31,high:121.5,low:117.6,close:120.47,vol:252756.18,amount:3025712.891,pct:2.1365},
+  {date:'20250811',open:116.79,high:118.5,low:116.48,close:117.95,vol:127981.73,amount:1508912.168,pct:1.3316},
+  {date:'20250808',open:117.68,high:117.68,low:116.4,close:116.4,vol:121513.0,amount:1418055.203,pct:-1.0793},
+  {date:'20250807',open:117.98,high:119.2,low:117.32,close:117.67,vol:169940.88,amount:2007916.589,pct:-0.5157},
+  {date:'20250806',open:118.0,high:118.65,low:117.01,close:118.28,vol:114485.67,amount:1349530.061,pct:0.2373},
+  {date:'20250805',open:119.0,high:119.3,low:117.3,close:118.0,vol:124850.55,amount:1471568.918,pct:-0.7068},
+  {date:'20250804',open:116.3,high:120.2,low:116.3,close:118.84,vol:160782.64,amount:1902328.181,pct:1.3042},
+  {date:'20250801',open:120.5,high:122.1,low:117.09,close:117.31,vol:247813.48,amount:2946052.922,pct:-3.1536},
+  {date:'20250731',open:121.0,high:126.8,low:120.28,close:121.13,vol:308747.73,amount:3788904.668,pct:-2.3066},
+  {date:'20250730',open:124.06,high:129.67,low:123.31,close:123.99,vol:472987.44,amount:5957278.63,pct:3.0845},
+  {date:'20250729',open:120.0,high:121.5,low:119.4,close:120.28,vol:169940.65,amount:2042850.877,pct:0.0166},
+  {date:'20250728',open:122.0,high:122.2,low:119.71,close:120.26,vol:191011.97,amount:2302878.681,pct:-1.3777},
+  {date:'20250725',open:117.9,high:122.0,low:117.9,close:121.94,vol:356933.76,amount:4286282.667,pct:3.4354},
+  {date:'20250724',open:116.6,high:118.0,low:115.14,close:117.89,vol:172253.98,amount:2011696.442,pct:0.7693},
+  {date:'20250723',open:115.77,high:118.36,low:115.5,close:116.99,vol:149110.76,amount:1741699.657,pct:0.9666},
+  {date:'20250722',open:116.97,high:117.33,low:115.8,close:115.87,vol:143927.33,amount:1672922.189,pct:-1.0588},
+  {date:'20250721',open:116.82,high:117.53,low:115.4,close:117.11,vol:115943.94,amount:1350683.002,pct:-0.0427},
+  {date:'20250718',open:117.86,high:120.3,low:116.23,close:117.16,vol:203233.08,amount:2391314.587,pct:-0.7034},
+  {date:'20250717',open:114.05,high:118.19,low:113.82,close:117.99,vol:241275.42,amount:2805867.152,pct:3.2826},
+  {date:'20250716',open:115.0,high:116.4,low:114.0,close:114.24,vol:158742.83,amount:1826208.291,pct:-0.6609},
+  {date:'20250715',open:117.1,high:117.56,low:114.0,close:115.0,vol:236202.59,amount:2718281.579,pct:-2.2026},
+  {date:'20250714',open:118.61,high:119.2,low:117.46,close:117.59,vol:112791.53,amount:1331566.268,pct:-0.6506},
+  {date:'20250711',open:117.9,high:119.1,low:117.37,close:118.36,vol:129774.02,amount:1537067.954,pct:0.2541},
+  {date:'20250710',open:119.02,high:119.87,low:118.04,close:118.06,vol:111583.31,amount:1322615.181,pct:-1.1802},
+  {date:'20250709',open:120.91,high:120.99,low:119.29,close:119.47,vol:126056.42,amount:1512241.902,pct:-1.8404},
+  {date:'20250708',open:123.0,high:123.5,low:121.01,close:121.71,vol:151877.86,amount:1854823.191,pct:0.745},
+  {date:'20250707',open:118.98,high:120.81,low:117.86,close:120.81,vol:114584.95,amount:1370153.527,pct:1.6491},
+  {date:'20250704',open:119.19,high:120.3,low:117.51,close:118.85,vol:141826.95,amount:1683622.173,pct:-0.7267},
+  {date:'20250703',open:120.58,high:121.55,low:119.0,close:119.72,vol:128590.07,amount:1541698.795,pct:-0.7626},
+  {date:'20250702',open:123.28,high:123.3,low:120.1,close:120.98,vol:130681.06,amount:1586895.318,pct:-2.4512}
+];
+
+// Sort by date ascending
+rawData.sort((a,b) => a.date.localeCompare(b.date));
+
+// ====== 统计数据 ======
+const firstClose = rawData[0].close;
+const lastClose = rawData[rawData.length-1].close;
+const totalChange = lastClose - firstClose;
+const totalPct = (totalChange / firstClose * 100);
+const maxClose = Math.max(...rawData.map(d => d.close));
+const minClose = Math.min(...rawData.map(d => d.close));
+const maxVol = Math.max(...rawData.map(d => d.vol));
+const totalVol = rawData.reduce((s,d) => s + d.vol, 0);
+const avgClose = rawData.reduce((s,d) => s + d.close, 0) / rawData.length;
+const upDays = rawData.filter(d => d.pct > 0).length;
+const downDays = rawData.filter(d => d.pct < 0).length;
+
+// ====== 渲染统计卡片 ======
+const statsGrid = document.getElementById('statsGrid');
+const stats = [
+  { label: '最新收盘价', value: lastClose.toFixed(2), unit: '元', cls: totalChange>=0?'up':'down', change: `${totalChange>=0?'+':''}${totalChange.toFixed(2)} (${totalPct>=0?'+':''}${totalPct.toFixed(2)}%)` },
+  { label: '期间最高价', value: maxClose.toFixed(2), unit: '元', cls: 'up', change: '' },
+  { label: '期间最低价', value: minClose.toFixed(2), unit: '元', cls: 'down', change: '' },
+  { label: '均价', value: avgClose.toFixed(2), unit: '元', cls: '', change: '' },
+  { label: '日均成交量', value: (totalVol / rawData.length / 10000).toFixed(1), unit: '万手', cls: '', change: '' },
+  { label: '涨跌天数', value: `${upDays}涨 / ${downDays}跌`, unit: '', cls: upDays > downDays ? 'up' : 'down', change: `胜率 ${(upDays/(upDays+downDays)*100).toFixed(1)}%` }
+];
+statsGrid.innerHTML = stats.map(s => `
+  <div class="stat-card">
+    <div class="label">${s.label}</div>
+    <div class="value ${s.cls}">${s.value} <span style="font-size:14px;font-weight:400">${s.unit}</span></div>
+    ${s.change ? `<div class="change ${s.cls}">${s.change}</div>` : ''}
+  </div>
+`).join('');
+
+// ====== 格式化日期 ======
+function fmtDate(d) {
+  const y = d.slice(0,4), m = d.slice(4,6), day = d.slice(6,8);
+  return `${y}/${m}/${day}`;
+}
+function fmtShortDate(d) {
+  const m = parseInt(d.slice(4,6)), day = parseInt(d.slice(6,8));
+  return `${m}/${day}`;
+}
+
+// ====== 构建 ECharts 图表 ======
+const chartDom = document.getElementById('mainChart');
+const myChart = echarts.init(chartDom);
+
+const dates = rawData.map(d => fmtShortDate(d.date));
+const closeData = rawData.map(d => d.close);
+const volData = rawData.map(d => d.vol / 10000); // 转化为万手
+const volColor = rawData.map(d => d.pct >= 0 ? '#ef5350' : '#26a69a');
+
+const option = {
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: { type: 'cross' },
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#1a1a2e', fontSize: 13 },
+    formatter: function(params) {
+      const idx = params[0].dataIndex;
+      const d = rawData[idx];
+      const cls = d.pct >= 0 ? 'up' : 'down';
+      return `
+        <div style="font-weight:600;margin-bottom:6px;font-size:14px">${fmtDate(d.date)}</div>
+        <div>开盘：${d.open.toFixed(2)}</div>
+        <div>最高：${d.high.toFixed(2)}</div>
+        <div>最低：${d.low.toFixed(2)}</div>
+        <div style="font-weight:600">收盘：<span class="${cls}">${d.close.toFixed(2)}</span></div>
+        <div>涨跌幅：<span class="${cls}">${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(2)}%</span></div>
+        <div>成交量：${(d.vol/10000).toFixed(1)} 万手</div>
+        <div>成交额：${(d.amount/10000).toFixed(1)} 万元</div>
+      `;
+    }
+  },
+  grid: [
+    { left: '4%', right: '4%', top: '6%', height: '60%' },
+    { left: '4%', right: '4%', top: '74%', height: '18%' }
+  ],
+  xAxis: [
+    {
+      type: 'category',
+      data: dates,
+      gridIndex: 0,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        fontSize: 11,
+        color: '#9ca3af',
+        interval: 15
+      },
+      splitLine: { show: false }
+    },
+    {
+      type: 'category',
+      data: dates,
+      gridIndex: 1,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { show: false },
+      splitLine: { show: false }
+    }
+  ],
+  yAxis: [
+    {
+      type: 'value',
+      gridIndex: 0,
+      splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } },
+      axisLabel: {
+        fontSize: 11,
+        color: '#9ca3af',
+        formatter: '{value}'
+      },
+      name: '收盘价 (元)',
+      nameTextStyle: { fontSize: 11, color: '#9ca3af' }
+    },
+    {
+      type: 'value',
+      gridIndex: 1,
+      splitLine: { show: false },
+      axisLabel: {
+        fontSize: 11,
+        color: '#9ca3af',
+        formatter: '{value}'
+      },
+      name: '万手',
+      nameTextStyle: { fontSize: 11, color: '#9ca3af' }
+    }
+  ],
+  dataZoom: [
+    {
+      type: 'inside',
+      xAxisIndex: [0, 1],
+      start: 0,
+      end: 100,
+      zoomOnMouseWheel: true,
+      moveOnMouseMove: true
+    },
+    {
+      type: 'slider',
+      xAxisIndex: [0, 1],
+      start: 70,
+      end: 100,
+      height: 16,
+      bottom: 2,
+      borderColor: '#e5e7eb',
+      fillerColor: 'rgba(66, 165, 245, 0.2)',
+      handleStyle: { color: '#42a5f5' },
+      textStyle: { fontSize: 10 }
+    }
+  ],
+  series: [
+    {
+      name: '收盘价',
+      type: 'line',
+      data: closeData,
+      xAxisIndex: 0,
+      yAxisIndex: 0,
+      smooth: true,
+      symbol: 'none',
+      lineStyle: {
+        color: '#ef5350',
+        width: 2
+      },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(239,83,80,0.3)' },
+            { offset: 1, color: 'rgba(239,83,80,0.02)' }
+          ]
+        }
+      },
+      markLine: {
+        silent: true,
+        data: [
+          {
+            yAxis: lastClose,
+            label: {
+              formatter: `最新 ${lastClose.toFixed(2)}`,
+              position: 'insideEndTop',
+              fontSize: 11,
+              color: '#ef5350'
+            },
+            lineStyle: { color: '#ef5350', type: 'dashed', opacity: 0.5 }
+          }
+        ]
+      }
+    },
+    {
+      name: '成交量',
+      type: 'bar',
+      data: volData,
+      xAxisIndex: 1,
+      yAxisIndex: 1,
+      itemStyle: { color: function(p) { return volColor[p.dataIndex]; }, opacity: 0.6 },
+      barWidth: '60%'
+    }
+  ]
+};
+
+myChart.setOption(option);
+
+// 响应式
+window.addEventListener('resize', () => myChart.resize());
+
+// ====== 渲染数据表格 ======
+const tbody = document.querySelector('#dataTable tbody');
+// 倒序（最新在上面）
+const sorted = [...rawData].reverse();
+tbody.innerHTML = sorted.map(d => {
+  const cls = d.pct >= 0 ? 'up' : 'down';
+  return `<tr class="${cls}">
+    <td>${fmtDate(d.date)}</td>
+    <td>${d.open.toFixed(2)}</td>
+    <td>${d.high.toFixed(2)}</td>
+    <td>${d.low.toFixed(2)}</td>
+    <td><strong>${d.close.toFixed(2)}</strong></td>
+    <td>${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(2)}</td>
+    <td>${(d.vol/10000).toFixed(1)}</td>
+    <td>${(d.amount/10000).toFixed(1)}</td>
+  </tr>`;
+}).join('');
+</script>
+</body>
+</html>

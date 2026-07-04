@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+env/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WorkBuddy
+.workbuddy/
+
+# Large generated files (can be re-generated)
+Task-2/chart.umd.min.js
+Task-2/Task-2-lab/chart.umd.min.js
+
+# Server
+*.pid
