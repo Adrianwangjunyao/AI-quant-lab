@@ -16,8 +16,7 @@ Thumbs.db
 .workbuddy/
 
 # Large generated files (can be re-generated)
-Task-2/chart.umd.min.js
-Task-2/Task-2-lab/chart.umd.min.js
+# chart.umd.min.js is needed for GitHub Pages - keep it tracked
 
 # Server
 *.pid

@@ -626,8 +626,18 @@ async function fetchStock(code) {
   loading.classList.remove('hidden');
   try {
     const resp = await fetch(`/api/stock?code=${code}`);
+    if (!resp.ok) {
+      document.getElementById('chartTitle').textContent = 'API 服务未运行';
+      document.getElementById('chartSub').textContent = 'GitHub Pages 仅支持预设股票（兆易创新），请选择下拉菜单中的"兆易创新"查看';
+      document.getElementById('chartLegend').textContent = '如需查询其他股票，请本地运行 server.py 后使用';
+      return false;
+    }
     const data = await resp.json();
-    if (data.error) { alert('获取数据失败: ' + data.error); return false; }
+    if (data.error) {
+      document.getElementById('chartTitle').textContent = '获取数据失败';
+      document.getElementById('chartSub').textContent = data.error;
+      return false;
+    }
     if (!data.dates || data.dates.length < 30) { alert('数据不足（少于30个交易日）'); return false; }
     stockData = {
       dates: data.dates, open: data.open, high: data.high,
@@ -637,7 +647,9 @@ async function fetchStock(code) {
     renderChart();
     return true;
   } catch(e) {
-    alert('网络请求失败: ' + e.message);
+    document.getElementById('chartTitle').textContent = 'API 服务未运行';
+    document.getElementById('chartSub').textContent = 'GitHub Pages 仅支持预设股票，请选择"兆易创新"查看';
+    document.getElementById('chartLegend').textContent = '如需查询其他股票，请本地运行 server.py 后使用';
     return false;
   } finally {
     loading.classList.add('hidden');
